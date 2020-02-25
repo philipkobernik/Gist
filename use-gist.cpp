@@ -23,10 +23,14 @@ std::vector<std::string> get_filenames(std::filesystem::path path) {
 	for (std::filesystem::directory_iterator iter{path}; iter != end;
 	     ++iter) {
 		// http://en.cppreference.com/w/cpp/experimental/fs/is_regular_file
-		if (std::filesystem::is_regular_file(
-			*iter))	 // comment out if all names (names of
-				 // directories tc.) are required
-			filenames.push_back(iter->path().string());
+		if (std::filesystem::is_regular_file(*iter)) {
+			// comment out if all names (names of
+			// directories tc.) are required
+			string filename = iter->path().string();
+			if (filename.substr(filename.length() - 3) == "wav") {
+				filenames.push_back(filename);
+			}
+		}
 	}
 
 	return filenames;
@@ -40,9 +44,7 @@ const int hopSize = frameSize / 4;
 
 int main() {
 	Gist<float> gist(frameSize, sampleRate);
-	// create text file
 
-	// audioFile.load ("../allolib_playground/philip/philip_voice2.wav");
 	// audioFile.printSummary();
 
 	for (const auto& name : get_filenames("/Users/ptk/src/Gist/audio")) {
@@ -50,7 +52,7 @@ int main() {
 		// create meta file
 		ofstream outFile;
 		std::string metaName = name.substr(0);
-		metaName.append(".meta");
+		metaName.append(".csv");
 		outFile.open(metaName);
 
 		//
@@ -62,15 +64,24 @@ int main() {
 		// process audio file
 		// use Gist to analyze and print a bunch of frames
 		//
-		cout << "n,RMS,peak,ZCR,centroid" << endl;
+		//cout << "📝 n, RMS, peak, ZCR, centroid" << endl;
+		outFile << "sample, rms, s.centroid, pitch" << endl;
 		for (int n = 0; n + frameSize < numSamples; n += hopSize) {
-			gist.processAudioFrame(&audioFile.samples[channel][n], frameSize);
-			outFile << n				   //
-				<< ',' << gist.rootMeanSquare()	   //
-				<< ',' << gist.peakEnergy()	   //
-				<< ',' << gist.zeroCrossingRate()  //
-				<< ',' << gist.spectralCentroid()  //
-				<< endl;			   //
+			gist.processAudioFrame(&audioFile.samples[channel][n],
+					       frameSize);
+			outFile << n << ','
+				<< gist.rootMeanSquare() << ','
+				//<< gist.peakEnergy() << ','
+				//<< gist.zeroCrossingRate() << ','
+				<< gist.spectralCentroid() << ','
+				//<< gist.spectralCrest() << ','
+				//<< gist.spectralFlatness() << ','
+				//<< gist.spectralRolloff() << ','
+				//<< gist.spectralKurtosis() << ','
+				//<< gist.energyDifference() << ','
+				//<< gist.spectralDifference() << ','
+				//<< gist.highFrequencyContent() << ','
+				<< gist.pitch() << endl;
 		}
 
 		outFile.close();
